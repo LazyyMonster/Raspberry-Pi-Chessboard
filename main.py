@@ -15,16 +15,16 @@ def main():
     hardware = Hardware()
 
     offline = False
-
     if offline:
-        g = ChessOffline()
-        g.mainLoop(chessMachine, hardware)
+        g = ChessOffline(chessMachine, hardware)
+        g.mainLoop()
+
     else:
         g = ChessLichess(chessMachine, hardware)
-        g.sendChallenge()
+        g.mainLoop()
 
     hardware.resetLed()
-
+    print ("The End")
 
 #this calls the 'main' function when this script is executed
 if __name__ == '__main__': main()

@@ -7,7 +7,7 @@ from threading import Thread
 class ChessLichess:
 
     def __init__(self, chessMachine, hardware):
-        self.chess = chessMachine
+        self.chessMachine = chessMachine
         self.hardware = hardware
 
 
@@ -22,7 +22,6 @@ class ChessLichess:
 
 
     def sendChallenge(self):
-        self.hardware.checkStartingPosition()
         try:
             if self.challengeAI:
                 self.sendChallengeAI()
@@ -33,7 +32,7 @@ class ChessLichess:
 
 
     def sendChallengePlayer(self):
-        time, increment, rated, variant = 10, 0, False, "standard"
+        time, increment, rated, variant = 15, 10, False, "standard"
 
         print("Searching for opponent...")
         response = self.client.board.seek(time,increment,rated,variant)
@@ -49,9 +48,7 @@ class ChessLichess:
                 self.highlighted = False if self.playerColor else True
 
                 print ('''You're playing as black!''' if self.playerColor else '''You're playing as white!''')
-
-                threadmain = Thread(target=self.mainLoop)
-                threadmain.start()
+                return
 
 
     def sendChallengeAI(self):
@@ -69,32 +66,32 @@ class ChessLichess:
 
             print ("AI challenge started!")
             print ('''You're playing as black!''' if self.playerColor else '''You're playing as white!''')
+            return
 
-            threadmain = Thread(target=self.mainLoop)
-            threadmain.start()
 
 
     def getStates(self):
         for event in self.stream:
 #            print (f"{event=}")
-            if event['type'] == "gameFull":
-                print("gameFull")
-            elif event['type'] == "gameState":
+#            if event['type'] == "gameFull":
+#                print("gameFull")
+#            elif event['type'] == "gameState":
+            if event['type'] == "gameState":
                 if event["status"] == "draw":
-                    self.chess._game_result = self.chess.DRAW
+                    self.chessMachine._game_result = self.chessMachine.DRAW
                 elif event["status"] == "resign":
-                    self.winner = event["winner"]
-                    if self.winner == "black":
-                        self.chess.endGame(self.chess.BLACK_WIN)
+                    winner = event["winner"]
+                    if winner == "black":
+                        self.chessMachine.endGame(self.chessMachine.BLACK_WIN)
                     else:
-                        self.chess.endGame(self.chess.WHITE_WIN)
+                        self.chessMachine.endGame(self.chessMachine.WHITE_WIN)
 
                     print("Someone resigned.")
-                    print(str(self.winner) + " is victorious!")
+                    print(str(winner) + " is victorious!")
                 else:
                     try:
-                        print(event["moves"].split()[-1])
                         moveAN = event["moves"].split()[-1]
+                        print (moveAN)
                         self.makeOpponentMove(moveAN)
                     except:
                         print("Game did not start")
@@ -107,19 +104,21 @@ class ChessLichess:
 
 
     def highlightLastMove(self):
-        lastMove = self.chess.getLastMove()
+        lastMove = self.chessMachine.getLastMove()
         if lastMove:
             moveFrom, moveTo = lastMove
             self.hardware.highlightMove((moveFrom[0], 8 - moveFrom[1]), (moveTo[0], 8 - moveTo[1]))
+        else:
+            self.hardware.resetLed()
 
 
     def makeOpponentMove(self, moveAN):
-        added = self.chess.addTextMove(moveAN)
+        added = self.chessMachine.addTextMove(moveAN)
         if added:
             self.highlightLastMove()
             self.highlighted = True
-        else:
-            print ("error in makeOpponentMove")
+#        else:
+#            print ("error in makeOpponentMove")
 
 
     def makePlayerMove(self):
@@ -128,10 +127,10 @@ class ChessLichess:
             if move:
                 moveFrom, moveTo = move
                 if moveTo:
-                    added = self.chess.addMove((moveFrom[0], 8 - moveFrom[1]), (moveTo[0], 8 - moveTo[1]))
+                    added = self.chessMachine.addMove((moveFrom[0], 8 - moveFrom[1]), (moveTo[0], 8 - moveTo[1]))
                     if added:
                         self.highlightLastMove()
-                        moveInAN = self.chess.getLastTextMove(self.chess.AN)
+                        moveInAN = self.chessMachine.getLastTextMove(self.chessMachine.AN)
                         print (f"{moveInAN=}")
                         while True:
                             try:
@@ -143,16 +142,25 @@ class ChessLichess:
 
 
     def mainLoop(self):
-        self.stream = self.client.board.stream_game_state(self.gameID)
-        thread = Thread(target=self.getStates)
-        thread.start()
+        while True:
+            self.hardware.checkStartingPosition()
 
-        gameResults = ["","WHITE WINS!","BLACK WINS!","STALEMATE","DRAW BY THE FIFTHY MOVES RULE","DRAW BY THE THREE REPETITION RULE", "DRAW BY THE AGREEMENT", "DRAW"]
+            self.sendChallenge()
 
-        while not self.chess.isGameOver():
-            if self.chess.getTurn() == self.playerColor:
-                 self.makePlayerMove()
+            self.stream = self.client.board.stream_game_state(self.gameID)
+            threadStates = Thread(target=self.getStates)
+            threadStates.start()
+
+            gameResults = ["","WHITE WINS!","BLACK WINS!","STALEMATE","DRAW BY THE FIFTHY MOVES RULE","DRAW BY THE THREE REPETITION RULE", "DRAW BY THE AGREEMENT", "DRAW"]
+
+            while not self.chessMachine.isGameOver():
+                 if self.chessMachine.getTurn() == self.playerColor:
+                     self.makePlayerMove()
 
 
-        print("Game Over! (Reason:%s)" % gameResults[self.chess.getGameResult()])
-        print(self.chess.getAllTextMoves(self.chess.SAN))
+            print("Game Over! (Reason:%s)" % gameResults[self.chessMachine.getGameResult()])
+            print(self.chessMachine.getAllTextMoves(self.chessMachine.SAN))
+
+            threadStates.join()
+            self.chessMachine.resetBoard()
+            self.hardware.resetLed()
