@@ -7,7 +7,7 @@ import adafruit_tca9548a
 
 
 #constants
-LIGHT_STRENGTH = 0.1
+BRIGHTNESS = 0.1
 
 
 class Hardware:
@@ -32,6 +32,7 @@ class Hardware:
 
     tca = adafruit_tca9548a.TCA9548A(i2c)
     matrix = matrix.Matrix8x8(tca[1], address = 0x71)
+    matrix.brightness = BRIGHTNESS
 
     translate = [[[8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]],
         [[7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]],
@@ -81,10 +82,10 @@ class Hardware:
                         column = (k * 2) + i
 
                         bits = bin(colValue)[2:].zfill(8)
-                        self.matrix[column, 0] = int(bits[-1]) * LIGHT_STRENGTH
-                        self.matrix[column, 1] = int(bits[-2]) * LIGHT_STRENGTH
-                        self.matrix[column, 6] = int(bits[-7]) * LIGHT_STRENGTH
-                        self.matrix[column, 7] = int(bits[-8]) * LIGHT_STRENGTH
+                        self.matrix[column, 0] = int(bits[-1]) * 1
+                        self.matrix[column, 1] = int(bits[-2]) * 1
+                        self.matrix[column, 6] = int(bits[-7]) * 1
+                        self.matrix[column, 7] = int(bits[-8]) * 1
                         self.mbrd[column] = colValue
                         if self.mbrd == self.initBrd:
                             print ("Pieces are ready!")
@@ -100,7 +101,7 @@ class Hardware:
         for led in leds:
             column, row = led
 	    #set ligth strength
-            self.matrix[column, row - 1] = LIGHT_STRENGTH
+            self.matrix[column, row - 1] = 1
 
         time.sleep(sleepTime)
         self.matrix.fill(0)
@@ -112,7 +113,7 @@ class Hardware:
 
         for led in leds:
             column, row = led
-            self.matrix[column, row - 1] = LIGHT_STRENGTH
+            self.matrix[column, row - 1] = 1
 
 
     def highlightMove(self, moveFrom, moveTo, ledTime = 0.1):
@@ -136,7 +137,7 @@ class Hardware:
             column = validMove[0]
             row = validMove[1]
 
-            self.matrix[column, 7 - row] = LIGHT_STRENGTH
+            self.matrix[column, 7 - row] = 1
 
 
     def searchForMove(self):

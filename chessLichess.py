@@ -91,7 +91,7 @@ class ChessLichess:
                 else:
                     try:
                         moveAN = event["moves"].split()[-1]
-                        print (moveAN)
+                        #print (moveAN)
                         self.makeOpponentMove(moveAN)
                     except:
                         print("Game did not start")
@@ -117,6 +117,7 @@ class ChessLichess:
         if added:
             self.highlightLastMove()
             self.highlighted = True
+            print (f"opponent {moveAN=}")
 #        else:
 #            print ("error in makeOpponentMove")
 
@@ -131,7 +132,7 @@ class ChessLichess:
                     if added:
                         self.highlightLastMove()
                         moveInAN = self.chessMachine.getLastTextMove(self.chessMachine.AN)
-                        print (f"{moveInAN=}")
+                        print (f"player {moveInAN=}")
                         while True:
                             try:
                                 response = self.client.board.make_move(self.gameID, moveInAN)
